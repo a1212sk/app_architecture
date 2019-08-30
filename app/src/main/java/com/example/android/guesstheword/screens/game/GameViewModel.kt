@@ -1,5 +1,6 @@
 package com.example.android.guesstheword.screens.game
 
+import android.os.CountDownTimer
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -19,6 +20,12 @@ class GameViewModel : ViewModel() {
     val score : LiveData<Int>
         get() = _score
 
+    val timer : CountDownTimer
+
+    private val _currentTime = MutableLiveData<Long>()
+    val currentTime : LiveData<Long>
+        get() = _currentTime
+
     // The list of words - the front of the list is the next word to guess
     private lateinit var wordList: MutableList<String>
 
@@ -29,13 +36,27 @@ class GameViewModel : ViewModel() {
     init{
         Log.i("GameViewModel","GameViewModel created!")
         _score.value = 0
+        _currentTime.value = 0
         _eventGameFinished.value = false
+        timer = object : CountDownTimer(COUNTDOWN_TIME, ONE_SECOND) {
+
+            override fun onTick(millisUntilFinished: Long) {
+                _currentTime.value = millisUntilFinished / ONE_SECOND
+            }
+
+            override fun onFinish() {
+                _eventGameFinished.value = true
+            }
+        }
+
+        timer.start()
         resetList()
         nextWord()
     }
 
     override fun onCleared() {
         super.onCleared()
+        timer.cancel()
         Log.i("GameViewModel","GameViewModel destroyed!")
     }
 
@@ -75,7 +96,7 @@ class GameViewModel : ViewModel() {
     private fun nextWord() {
         //Select and remove a word from the list
         if (wordList.isEmpty()) {
-            _eventGameFinished.value = true
+            resetList()
         } else {
             _word.value = wordList.removeAt(0)
         }
@@ -97,5 +118,15 @@ class GameViewModel : ViewModel() {
 
     fun onGameFinishedCompleted() {
         _eventGameFinished.value = false
+    }
+
+    companion object {
+        // These represent different important times
+        // This is when the game is over
+        const val DONE = 0L
+        // This is the number of milliseconds in a second
+        const val ONE_SECOND = 1000L
+        // This is the total time of the game
+        const val COUNTDOWN_TIME = 60000L
     }
 }
