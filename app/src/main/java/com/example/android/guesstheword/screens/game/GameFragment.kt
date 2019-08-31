@@ -54,6 +54,8 @@ class GameFragment : Fragment() {
                 false
         )
 
+        binding.gameViewModel = viewModel
+
         viewModel.score.observe(this, Observer { newScore ->
             binding.scoreText.text = newScore.toString()
         })
@@ -62,14 +64,6 @@ class GameFragment : Fragment() {
             binding.wordText.text = newWord
         })
 
-        binding.correctButton.setOnClickListener {
-            viewModel.onCorrect()
-
-        }
-        binding.skipButton.setOnClickListener {
-            viewModel.onSkip()
-
-        }
 
         viewModel.eventGameFinished.observe(this,Observer{
             if(it){
