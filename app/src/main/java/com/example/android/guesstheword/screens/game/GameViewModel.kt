@@ -5,12 +5,24 @@ import android.text.format.DateUtils
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import java.util.logging.Logger
 
+private val CORRECT_BUZZ_PATTERN = longArrayOf(100, 100, 100, 100, 100, 100)
+private val PANIC_BUZZ_PATTERN = longArrayOf(0, 200)
+private val GAME_OVER_BUZZ_PATTERN = longArrayOf(0, 2000)
+private val NO_BUZZ_PATTERN = longArrayOf(0)
 
 class GameViewModel : ViewModel() {
+
+    enum class BuzzType(val pattern: LongArray) {
+        CORRECT(CORRECT_BUZZ_PATTERN),
+        GAME_OVER(GAME_OVER_BUZZ_PATTERN),
+        COUNTDOWN_PANIC(PANIC_BUZZ_PATTERN),
+        NO_BUZZ(NO_BUZZ_PATTERN)
+    }
 
     // The current word
     private var _word = MutableLiveData<String>()
@@ -39,11 +51,21 @@ class GameViewModel : ViewModel() {
     val eventGameFinished : LiveData<Boolean>
             get() = _eventGameFinished
 
+    private val _buzzEvent = MutableLiveData<BuzzType>()
+    val buzzEvent : LiveData<BuzzType>
+        get() = _buzzEvent
+
+    fun onBuzzComplete(){
+        _buzzEvent.value = BuzzType.NO_BUZZ
+    }
+
+
     init{
         Log.i("GameViewModel","GameViewModel created!")
         _score.value = 0
         _currentTime.value = 0
         _eventGameFinished.value = false
+        _buzzEvent.value = BuzzType.NO_BUZZ
         timer = object : CountDownTimer(COUNTDOWN_TIME, ONE_SECOND) {
 
             override fun onTick(millisUntilFinished: Long) {
@@ -114,16 +136,19 @@ class GameViewModel : ViewModel() {
     fun onSkip() {
         _score.value = _score.value?.minus(1)
         nextWord()
+        _buzzEvent.value = BuzzType.COUNTDOWN_PANIC
     }
 
     fun onCorrect() {
         _score.value = _score.value?.plus(1)
         Log.i("***",_score.value.toString())
         nextWord()
+        _buzzEvent.value = BuzzType.CORRECT
     }
 
     fun onGameFinishedCompleted() {
         _eventGameFinished.value = false
+        _buzzEvent.value = BuzzType.GAME_OVER
     }
 
     companion object {
